@@ -47,24 +47,24 @@ func init() {
 		"umee":      "umee",
 	}
 }
-func fethcPrice(id string) (float64, error) {
+func fethcPrice(id string) (float64, time.Time, error) {
 	uri := fmt.Sprintf("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=%s&order=market_cap_desc&per_page=100&page=1&sparkline=false", id)
 	resp, err := http.Get(uri)
 	if err != nil {
-		return 0, err
+		return 0, time.Time{}, err
 	}
 	defer resp.Body.Close()
 	r, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return 0, err
+		return 0, time.Time{}, err
 	}
 	var s CoinGeckoPriceResponse
 	err = json.Unmarshal(r, &s)
 	if err != nil {
-		return 0, err
+		return 0, time.Time{}, err
 	}
 
-	return s[0].CurrentPrice, nil
+	return s[0].CurrentPrice, s[0].LastUpdated, nil
 }
 
 // PriceComponent
@@ -77,18 +77,18 @@ func PriceComponent(appName, pName string) *widgets.Paragraph {
 	p := widgets.NewParagraph()
 	p.Title = fmt.Sprintf("%s Price", pName)
 
-	price, err := fethcPrice(id)
+	price, ut, err := fethcPrice(id)
 	if err != nil {
 		fmt.Println("Err while fetching the price", err)
 	}
-	p.Text = strconv.FormatFloat(price, 'g', 5, 64) + " at " + time.Now().Local().String()
+	p.Text = strconv.FormatFloat(price, 'g', 5, 64) + " at " + ut.Local().String()
 
 	return p
 }
 
 func ChainIdComponent(appName, chainID string) *widgets.Paragraph {
 	p := widgets.NewParagraph()
-	p.Title = fmt.Sprintf("%s Chain ID", appName)
+	p.Title = fmt.Sprintf("%s chain-id", appName)
 	p.Text = chainID
 	return p
 }

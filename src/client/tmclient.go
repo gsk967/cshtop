@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -52,10 +51,10 @@ func TMClient(uri string, refresh *bool, nbList *widgets.List, txList *widgets.L
 		os.Exit(1)
 	}
 
-	nTxsEvents, err := client.Subscribe(context.Background(), TxSubscriber, tmtypes.EventQueryTx.String())
-	if err != nil {
-		os.Exit(1)
-	}
+	// nTxsEvents, err := client.Subscribe(context.Background(), TxSubscriber, tmtypes.EventQueryTx.String())
+	// if err != nil {
+	// 	os.Exit(1)
+	// }
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
@@ -66,20 +65,25 @@ func TMClient(uri string, refresh *bool, nbList *widgets.List, txList *widgets.L
 		select {
 		case result := <-nbEvents:
 			*refresh = true
-			// logger.Info("got new block header", "height", result.Data.(tmtypes.EventDataNewBlock).Block.Height)
-			blist := blocksList(result.Data.(tmtypes.EventDataNewBlock).Block, nBSents)
+			block := result.Data.(tmtypes.EventDataNewBlock).Block
+			blist := blocksList(block, nBSents)
+			// nbList.TextStyle = ui.NewStyle(ui.ColorYellow)
 			nbList.Rows = blist
-			nbList.TextStyle = ui.NewStyle(ui.ColorYellow)
 			nBSents = blist
-			bheight := fmt.Sprintf("%d", result.Data.(tmtypes.EventDataNewBlock).Block.Height)
+			bheight := fmt.Sprintf("%d at %s", block.Height, block.Time.Local().String())
 			bh.Text = bheight
 
-		case txResult := <-nTxsEvents:
-			*refresh = true
-			txsList := newTxsList(txResult.Data.(tmtypes.EventDataTx), txs)
-			txList.Rows = txsList
-			txList.TextStyle = ui.NewStyle(ui.ColorYellow)
-			txs = txsList
+			// txs list
+			txSents := txListProcess(client, block.Txs)
+			txs = append(txSents, txs...)
+			txList.Rows = txs
+
+		// case <-nTxsEvents:
+		// 	// *refresh = true
+		// 	// // txList.TextStyle = ui.NewStyle(ui.ColorYellow)
+		// 	// txsList := newTxsList(txResult.Data.(tmtypes.EventDataTx), txs)
+		// 	// txList.Rows = txsList
+		// 	// txs = txsList
 
 		case <-quit:
 			os.Exit(0)
@@ -87,19 +91,29 @@ func TMClient(uri string, refresh *bool, nbList *widgets.List, txList *widgets.L
 	}
 }
 
-func newTxsList(tx tmtypes.EventDataTx, txs []string) []string {
-	var sent string
-	if tx.Result.Code == 0 {
-		sent = fmt.Sprintf("✅ bHeight %d Tx Hash %s", tx.Height, "")
-	} else {
-		sent = fmt.Sprintf("😑 bHeight %d Tx Hash %s", tx.Height, "")
+func txListProcess(client *tmclient.HTTP, txs tmtypes.Txs) []string {
+	txSents := make([]string, 0, len(txs))
+	for _, txHash := range txs {
+		resTx, err := client.Tx(context.Background(), txHash.Hash(), false)
+		if err != nil {
+			println("err while fetching tx ", err.Error())
+			continue
+		}
+		var sent string
+		if resTx.TxResult.Code == 0 {
+			sent = fmt.Sprintf("✅ bHeight %d TxHash %s", resTx.Height, resTx.Hash.String())
+		} else {
+			sent = fmt.Sprintf("❌ bHeight %d TxHash %s", resTx.Height, resTx.Hash.String())
+		}
+
+		txSents = append(txSents, sent)
 	}
-	txs = append([]string{sent}, txs...)
-	return txs
+
+	return txSents
 }
 
 func blocksList(block *tmtypes.Block, nBSents []string) []string {
-	nbSentences := fmt.Sprintf("🦧 %d proposed by %s and no of Txs=%d", block.Height, block.ProposerAddress, len(block.Txs))
+	nbSentences := fmt.Sprintf("👉 %d is proposed by %s and no of txs=%d", block.Height, block.ProposerAddress, len(block.Txs))
 	nBSents = append([]string{nbSentences}, nBSents...)
 	return nBSents
 }
