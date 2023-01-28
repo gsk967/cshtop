@@ -1,7 +1,6 @@
 package src
 
 import (
-	"log"
 	"os"
 	"time"
 
@@ -9,12 +8,15 @@ import (
 	"github.com/gizak/termui/v3/widgets"
 	"github.com/gsk967/cshtop/src/client"
 	"github.com/gsk967/cshtop/src/components"
+	"github.com/gsk967/cshtop/src/types"
+	"github.com/tendermint/tendermint/libs/log"
+	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 )
 
 // DrawMainMenu
-func DrawMainMenu(appName, pName, cid string, node string) {
+func DrawMainMenu(logger log.Logger, appName, pName, cid string, tc *tmclient.HTTP, vals types.ValidatorMap) {
 	if err := ui.Init(); err != nil {
-		log.Fatalf("failed to initialize termui: %v", err)
+		logger.Error("failed to initialize termui: %v", err)
 	}
 	defer ui.Close()
 
@@ -26,7 +28,7 @@ func DrawMainMenu(appName, pName, cid string, node string) {
 	priceTicker := time.NewTicker(TI_PRICE * time.Second)
 
 	// components
-	priceComponent := *components.PriceComponent(appName, pName)
+	priceComponent := *components.PriceComponent(logger, appName, pName)
 	blockHeight := *components.BlockHeightComponent(&refresh)
 
 	lists := make([]*widgets.List, 2)
@@ -37,7 +39,8 @@ func DrawMainMenu(appName, pName, cid string, node string) {
 	lists[1].Title = "Txs"
 
 	// Start the client
-	go client.TMClient(node, &refresh, lists[0], lists[1], &blockHeight)
+	// client.TMClient(logger, nodes, &refresh, lists[0], lists[1], &blockHeight, vals)
+	go client.BlocksAndTxProcess(logger, tc, &refresh, lists[0], lists[1], &blockHeight, vals)
 
 	grid.Set(
 		ui.NewRow(0.1,
@@ -80,7 +83,7 @@ func DrawMainMenu(appName, pName, cid string, node string) {
 
 		case <-priceTicker.C:
 			refresh = true
-			priceComponent = *components.PriceComponent(appName, pName)
+			priceComponent = *components.PriceComponent(logger, appName, pName)
 		}
 	}
 }

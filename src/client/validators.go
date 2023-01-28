@@ -1,57 +1,22 @@
 package client
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"time"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/gsk967/cshtop/src/types"
+	"github.com/tendermint/tendermint/libs/log"
 )
 
-type Validator struct {
-	OperatorAddress string `json:"operator_address,omitempty"`
-	ConsensusPubkey struct {
-		Type string `json:"@type,omitempty"`
-		Key  string `json:"key,omitempty"`
-	} `json:"consensus_pubkey,omitempty"`
-	Jailed          bool   `json:"jailed,omitempty"`
-	Status          string `json:"status,omitempty"`
-	Tokens          string `json:"tokens,omitempty"`
-	DelegatorShares string `json:"delegator_shares,omitempty"`
-	Description     struct {
-		Moniker         string `json:"moniker,omitempty"`
-		Identity        string `json:"identity,omitempty"`
-		Website         string `json:"website,omitempty"`
-		SecurityContact string `json:"security_contact,omitempty"`
-		Details         string `json:"details,omitempty"`
-	} `json:"description,omitempty"`
-	UnbondingHeight string    `json:"unbonding_height,omitempty"`
-	UnbondingTime   time.Time `json:"unbonding_time,omitempty"`
-	Commission      struct {
-		CommissionRates struct {
-			Rate          string `json:"rate,omitempty"`
-			MaxRate       string `json:"max_rate,omitempty"`
-			MaxChangeRate string `json:"max_change_rate,omitempty"`
-		} `json:"commission_rates,omitempty"`
-		UpdateTime time.Time `json:"update_time,omitempty"`
-	} `json:"commission,omitempty"`
-	MinSelfDelegation string `json:"min_self_delegation,omitempty"`
-}
-
-type ValidatorsResp struct {
-	Validators []Validator `json:"validators,omitempty"`
-	Pagination struct {
-		NextKey string `json:"next_key,omitempty"`
-		Total   string `json:"total,omitempty"`
-	} `json:"pagination,omitempty"`
-}
-
-func getValidators(lcd, uriQuery string, validators []Validator) ([]Validator, int) {
+func getValidators(logger log.Logger, lcd, uriQuery string, validators []types.Validator) ([]types.Validator, int) {
 	uri := fmt.Sprintf("%s?%s", lcd, uriQuery)
-	fmt.Println("uri ", uri)
 	resp, err := http.Get(uri)
 	if err != nil {
-		fmt.Println("err ", err)
+		logger.Error("👎🏻 failed to get validators from uri ", "uri", uri, "err", err.Error())
 		return validators, http.StatusInternalServerError
 	}
 
@@ -59,17 +24,19 @@ func getValidators(lcd, uriQuery string, validators []Validator) ([]Validator, i
 		defer resp.Body.Close()
 		r, err := io.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println("err ", err)
+			logger.Error("👎🏻 failed to read the validators from uri ", "uri", uri, "err", err.Error())
 		}
-		var s ValidatorsResp
+		var s types.ValidatorsResp
 		err = json.Unmarshal(r, &s)
 		if err != nil {
-			fmt.Println("err ", err)
+			logger.Error("👎🏻 failed to unmarshal the validators from uri ", "uri", uri, "err", err.Error())
 		}
+		logger.Info("👍 found the validators", "uri", uri, "count", len(s.Validators))
 		validators = append(validators, s.Validators...)
+
 		if len(s.Pagination.NextKey) != 0 {
 			uriQuery = fmt.Sprintf("status=BOND_STATUS_BONDED&pagination.key=%s", s.Pagination.NextKey)
-			getValidators(lcd, uriQuery, validators)
+			return getValidators(logger, lcd, uriQuery, validators)
 		}
 	} else {
 		return validators, resp.StatusCode
@@ -79,19 +46,30 @@ func getValidators(lcd, uriQuery string, validators []Validator) ([]Validator, i
 }
 
 // GetValidators will returns bonded validators from lcd list
-func GetValidators(lcdUris []string) []Validator {
+func GetValidators(logger log.Logger, lcdUris []string) []types.Validator {
 	uriQuery := "status=BOND_STATUS_BONDED"
 	for _, lcdUri := range lcdUris {
 		lcdUri := fmt.Sprintf("%s/cosmos/staking/v1beta1/validators", lcdUri)
-		validators, statusCode := getValidators(lcdUri, uriQuery, []Validator{})
+		validators, statusCode := getValidators(logger, lcdUri, uriQuery, []types.Validator{})
 		if statusCode == 200 {
-			fmt.Println("founnd the validators from uri ", lcdUri)
+			logger.Info("👍 found the validators", "uri", lcdUri, "total_active", len(validators))
 			return validators
 		} else {
-			fmt.Println("not founnd the validators from uri ", lcdUri)
+			logger.Error("👎🏻 failed to get validators from uri ", "uri", lcdUri)
 			continue
 		}
 	}
 
-	return []Validator{}
+	return []types.Validator{}
+}
+
+// GetMapValidators
+func GetMapValidators(validators []types.Validator) types.ValidatorMap {
+	vals := make(types.ValidatorMap)
+	for _, val := range validators {
+		e, _ := base64.StdEncoding.DecodeString(val.ConsensusPubkey.Key)
+		pk := &ed25519.PubKey{Key: e}
+		vals[pk.Address().String()] = val.Description.Moniker
+	}
+	return vals
 }

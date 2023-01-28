@@ -16,14 +16,23 @@ func startCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := src.StartBlockExplorer(appName); err != nil {
+
+			rpcNodeUri, err := cmd.Flags().GetString(FlagRPCNode)
+			if err != nil {
 				return err
 			}
-			return nil
+
+			lcdNodeUri, err := cmd.Flags().GetString(FlagLCD)
+			if err != nil {
+				return err
+			}
+
+			return src.StartBlockExplorer(appName, rpcNodeUri, lcdNodeUri)
 		},
 	}
 
-	cmd.Flags().StringP(FlagNode, "n", "http://localhost:26657", "App node uri")
+	cmd.Flags().StringP(FlagRPCNode, "r", "", "rpc node uri, override chain registry rpc uris")
+	cmd.Flags().StringP(FlagLCD, "l", "", "lcd uri, override chain registry lcd uris")
 	cmd.Flags().StringP(FlagAppName, "a", "umee", "Application Name")
 
 	return cmd

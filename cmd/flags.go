@@ -1,6 +1,7 @@
 package cmd
 
 const (
-	FlagNode    = "node"
+	FlagRPCNode = "rpc"
+	FlagLCD     = "lcd"
 	FlagAppName = "app"
 )
