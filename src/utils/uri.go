@@ -14,7 +14,7 @@ func GetUris(uris []string, port string) []string {
 			// TODO:
 		}
 		var mp string
-		if u.Port() == "443" {
+		if u.Port() == "443" || u.Port() == "26657" {
 			mp = u.Port()
 		} else {
 			mp = port
