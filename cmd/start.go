@@ -22,17 +22,17 @@ func startCmd() *cobra.Command {
 				return err
 			}
 
-			lcdNodeUri, err := cmd.Flags().GetString(FlagLCD)
+			restUri, err := cmd.Flags().GetString(FlagRest)
 			if err != nil {
 				return err
 			}
 
-			return src.StartBlockExplorer(appName, rpcNodeUri, lcdNodeUri)
+			return src.StartBlockExplorer(appName, rpcNodeUri, restUri)
 		},
 	}
 
 	cmd.Flags().StringP(FlagRPCNode, "r", "", "rpc node uri, override chain registry rpc uris")
-	cmd.Flags().StringP(FlagLCD, "l", "", "lcd uri, override chain registry lcd uris")
+	cmd.Flags().StringP(FlagRest, "l", "", "rest uri, override chain registry rest uris")
 	cmd.Flags().StringP(FlagAppName, "a", "umee", "Application Name")
 
 	return cmd

@@ -13,9 +13,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 )
 
-func getValidators(logger log.Logger, lcd string, uriQuery map[string]string, validators []types.Validator) ([]types.Validator, int) {
-	// uri := fmt.Sprintf("%s?%s", lcd, uriQuery)
-	uri, err := url.Parse(lcd)
+func getValidators(logger log.Logger, restUri string, uriQuery map[string]string, validators []types.Validator) ([]types.Validator, int) {
+	uri, err := url.Parse(restUri)
 	if err != nil {
 		logger.Error("👎🏻 failed to parse uri ", "uri", uri.String(), "err", err.Error())
 	}
@@ -50,7 +49,7 @@ func getValidators(logger log.Logger, lcd string, uriQuery map[string]string, va
 				"status":         "BOND_STATUS_BONDED",
 				"pagination.key": s.Pagination.NextKey,
 			}
-			return getValidators(logger, lcd, uriQuery, validators)
+			return getValidators(logger, restUri, uriQuery, validators)
 		}
 	} else {
 		return validators, resp.StatusCode
@@ -59,12 +58,12 @@ func getValidators(logger log.Logger, lcd string, uriQuery map[string]string, va
 	return validators, resp.StatusCode
 }
 
-// GetValidators will returns bonded validators from lcd list
-func GetValidators(logger log.Logger, lcdUris []string) []types.Validator {
+// GetValidators will returns bonded validators from restUris list
+func GetValidators(logger log.Logger, restUris []string) []types.Validator {
 	uriQuery := map[string]string{
 		"status": "BOND_STATUS_BONDED",
 	}
-	for _, lcdUri := range lcdUris {
+	for _, lcdUri := range restUris {
 		lcdUri := fmt.Sprintf("%s/cosmos/staking/v1beta1/validators", lcdUri)
 		validators, statusCode := getValidators(logger, lcdUri, uriQuery, []types.Validator{})
 		if statusCode == 200 {

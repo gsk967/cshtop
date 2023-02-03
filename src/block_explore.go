@@ -9,20 +9,20 @@ import (
 )
 
 // StartBlockExplorer
-func StartBlockExplorer(appName, rpcNodeUri, lcdNodeUri string) error {
+func StartBlockExplorer(appName, rpcNodeUri, restUri string) error {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	crr, err := client.GetChainRegistry(logger, appName)
 	if err != nil {
 		return err
 	}
-	var lcdUris []string
-	if len(lcdNodeUri) == 0 {
-		lcdUris = utils.GetUris(crr.GetLCDUris(), "443")
+	var restUris []string
+	if len(restUri) == 0 {
+		restUris = utils.GetUris(crr.GetRestUris(), "443")
 	} else {
-		lcdUris = []string{lcdNodeUri}
+		restUris = []string{restUri}
 	}
 	// Get the validators
-	vals := client.GetMapValidators(client.GetValidators(logger, lcdUris))
+	vals := client.GetMapValidators(client.GetValidators(logger, restUris))
 
 	var rpcUris []string
 	if len(rpcNodeUri) == 0 {

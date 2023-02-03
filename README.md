@@ -11,10 +11,10 @@ make install
 ## NoteL make appName should match with chain registry folder name https://github.com/cosmos/chain-registry/
 $ cshtop start --app cosmoshub
 
-# override the rpc and lcd uri
-$ go run main.go start --app <appName> --lcd <lcd> --rpc <rpc>
+# override the rpc and rest uri
+$ go run main.go start --app <appName>  --rpc <rpc> --rest <rest>
 # or
-$ cshtop start --app cosmoshub --lcd https://lcd-cosmoshub.whispernode.com:443 --rpc https://rpc-cosmoshub.whispernode.com:443
+$ cshtop start --app cosmoshub --rpc https://rpc-cosmoshub.whispernode.com:443 --rest https://lcd-cosmoshub.whispernode.com:443
 ```
 
 ## Supported Apps 

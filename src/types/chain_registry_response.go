@@ -41,7 +41,7 @@ func (crr ChainRegistryResponse) GetChainID() string {
 	return crr.ChainID
 }
 
-func (crr ChainRegistryResponse) GetLCDUris() []string {
+func (crr ChainRegistryResponse) GetRestUris() []string {
 	uris := make([]string, 0, len(crr.Apis.Rest))
 	for _, uri := range crr.Apis.Rest {
 		uris = append(uris, uri.Address)

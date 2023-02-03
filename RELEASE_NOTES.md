@@ -10,7 +10,7 @@ This is initial release of cshtop
 
 **Note**
 
-> You can override the tendermint rpc api and lcd uri
+> You can override the tendermint rpc api and rest uri
 ```bash
-$ cshtop start --app cosmoshub --lcd https://lcd-cosmoshub.whispernode.com:443 --rpc https://rpc-cosmoshub.whispernode.com:443
+$ cshtop start --app cosmoshub --rest https://lcd-cosmoshub.whispernode.com:443 --rpc https://rpc-cosmoshub.whispernode.com:443
 ```
