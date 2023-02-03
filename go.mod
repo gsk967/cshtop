@@ -3,7 +3,6 @@ module github.com/gsk967/cshtop
 go 1.19
 
 require (
-	github.com/Workiva/go-datastructures v1.0.53
 	github.com/cosmos/cosmos-sdk v0.46.8
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/spf13/cobra v1.6.1
