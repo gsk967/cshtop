@@ -56,6 +56,10 @@ func DrawMainMenu(logger log.Logger, appName, pName, cid string, tc *tmclient.HT
 	)
 
 	ui.Render(grid)
+	// initial Height and initial Height of terminal
+	mX := grid.Size().X
+	mY := grid.Size().Y
+
 	tick := time.NewTicker(100 * time.Millisecond)
 	uiEvents := ui.PollEvents()
 
@@ -77,7 +81,27 @@ func DrawMainMenu(logger log.Logger, appName, pName, cid string, tc *tmclient.HT
 			case "<Resize>":
 				payload := e.Payload.(ui.Resize)
 				grid.SetRect(0, 0, payload.Width, payload.Height)
+				mX = payload.Width
+				mY = payload.Height
 				ui.Clear()
+				ui.Render(grid)
+			case "<MouseWheelUp>":
+				payload := e.Payload.(ui.Mouse)
+				x, y := payload.X, payload.Y
+				if x < (mX/2) && y > (mY/10) {
+					lists[0].ScrollUp()
+				} else if x > (mX/2) && y > (mY/10) {
+					lists[1].ScrollUp()
+				}
+				ui.Render(grid)
+			case "<MouseWheelDown>":
+				payload := e.Payload.(ui.Mouse)
+				x, y := payload.X, payload.Y
+				if x < (mX/2) && y > (mY/10) {
+					lists[0].ScrollDown()
+				} else if x > (mX/2) && y > (mY/10) {
+					lists[1].ScrollDown()
+				}
 				ui.Render(grid)
 			}
 
