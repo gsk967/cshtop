@@ -39,7 +39,6 @@ func DrawMainMenu(logger log.Logger, appName, pName, cid string, tc *tmclient.HT
 	lists[1].Title = "Txs"
 
 	// Start the client
-	// client.TMClient(logger, nodes, &refresh, lists[0], lists[1], &blockHeight, vals)
 	go client.BlocksAndTxProcess(logger, tc, &refresh, lists[0], lists[1], &blockHeight, vals)
 
 	grid.Set(
